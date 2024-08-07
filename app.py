@@ -111,6 +111,9 @@ def process_files():
         audio_file_path = os.path.join('uploads', audio_file.filename)
         pdf_file_path = os.path.join('uploads', pdf_file.filename)
 
+        # Ensure uploads directory exists
+        os.makedirs('uploads', exist_ok=True)
+
         audio_file.save(audio_file_path)
         pdf_file.save(pdf_file_path)
 
@@ -146,5 +149,4 @@ def process_files():
         return jsonify({'error': f'An error occurred: {str(e)}'}), 500
 
 if __name__ == '__main__':
-    os.makedirs('uploads', exist_ok=True)
-    app.run(debug=True)
+    app.run(debug=False, host='0.0.0.0')  # Set host to '0.0.0.0' for external access

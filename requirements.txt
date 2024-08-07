@@ -7,3 +7,4 @@ python-dotenv
 gunicorn
 python-Levenshtein
 flask-cors
+python-dotenv
