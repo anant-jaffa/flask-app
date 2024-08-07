@@ -4,3 +4,4 @@ PyMuPDF
 azure-ai-textanalytics
 fuzzywuzzy
 python-dotenv
+gunicorn
