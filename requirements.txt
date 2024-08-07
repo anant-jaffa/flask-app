@@ -5,3 +5,5 @@ azure-ai-textanalytics
 fuzzywuzzy
 python-dotenv
 gunicorn
+python-Levenshtein
+flask-cors
