@@ -11,4 +11,5 @@ python-dotenv
 langchain
 azure-core
 langchain_community
-
+langchain-openai
+openai
