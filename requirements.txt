@@ -10,3 +10,5 @@ flask-cors
 python-dotenv
 langchain
 azure-core
+langchain_community
+
