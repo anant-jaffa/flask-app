@@ -8,13 +8,17 @@ from fuzzywuzzy import process
 import os
 from flask_cors import CORS
 from dotenv import load_dotenv
+from langchain import PromptTemplate, LLMChain
+from langchain.chat_models import AzureChatOpenAI
+from langchain.schema import HumanMessage
 
-load_dotenv()  # Load environment variables from .env file
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 
-# Azure Speech-to-Text credentials
+# Load environment variables
 subscription_key = os.getenv('SUBSCRIPTION_KEY')
 region = os.getenv('REGION')
 
@@ -22,13 +26,39 @@ region = os.getenv('REGION')
 text_analytics_endpoint = os.getenv('TEXT_ANALYTICS_ENDPOINT')
 text_analytics_key = os.getenv('TEXT_ANALYTICS_KEY')
 
+# Azure OpenAI credentials
+openai_api_base = os.getenv('OPENAI_API_BASE')
+openai_api_version = os.getenv('OPENAI_API_VERSION')
+deployment_name = os.getenv('DEPLOYMENT_NAME')
+openai_api_key = os.getenv('OPENAI_API_KEY')
+openai_api_type = "azure"
+
+# Initialize AzureChatOpenAI
+llm = AzureChatOpenAI(
+    openai_api_base=openai_api_base,
+    openai_api_version=openai_api_version,
+    deployment_name=deployment_name,
+    openai_api_key=openai_api_key,
+    openai_api_type=openai_api_type,
+)
+
+# Define the prompt template for summarization
+template = """
+You are a highly skilled research analyst. Your task is to analyze and summarize an earnings call transcript for a company. Read the full transcript text of the earnings call and analyze the main topics discussed. Identify the key points and significant highlights based on the content of the transcript. Create a detailed summary or notes that capture the essence of the call, focusing on the most important aspects of the discussion. Review the transcript and extract the main topics discussed. Your summary should be concise, with clear and structured bullet points under relevant headings. Use appropriate headings based on the content. Each bullet point should highlight a key takeaway from the call.
+{text}
+"""
+
+prompt = PromptTemplate(
+    input_variables=["text"],
+    template=template,
+)
+
 # Helper function to authenticate Azure Text Analytics client
 def authenticate_client():
     ta_credential = AzureKeyCredential(text_analytics_key)
     text_analytics_client = TextAnalyticsClient(
         endpoint=text_analytics_endpoint, 
-        credential=ta_credential
-    )
+        credential=ta_credential)
     return text_analytics_client
 
 # Function to convert MP3 to text using Azure Speech-to-Text
@@ -99,6 +129,14 @@ def context_aware_fuzzy_match_replace(transcript, entities, phrases, threshold=6
                 corrected_transcript = corrected_transcript.replace(entity.text, original_match, 1)
     return corrected_transcript
 
+# Function to extract text from a PDF file for summarization
+def extract_text_from_pdf(pdf_stream):
+    doc = fitz.open(stream=pdf_stream.read(), filetype="pdf")
+    text = ""
+    for page in doc:
+        text += page.get_text()
+    return text
+
 @app.route('/process', methods=['POST'])
 def process_files():
     try:
@@ -110,9 +148,6 @@ def process_files():
 
         audio_file_path = os.path.join('uploads', audio_file.filename)
         pdf_file_path = os.path.join('uploads', pdf_file.filename)
-
-        # Ensure uploads directory exists
-        os.makedirs('uploads', exist_ok=True)
 
         audio_file.save(audio_file_path)
         pdf_file.save(pdf_file_path)
@@ -148,5 +183,19 @@ def process_files():
         app.logger.error(f'Error: {str(e)}')  # Log the error
         return jsonify({'error': f'An error occurred: {str(e)}'}), 500
 
+@app.route('/summarize', methods=['POST'])
+def summarize():
+    if 'pdf' not in request.files:
+        return jsonify({'error': 'No PDF file provided'}), 400
+
+    pdf_file = request.files['pdf']
+    pdf_text = extract_text_from_pdf(pdf_file)
+
+    chain = LLMChain(llm=llm, prompt=prompt)
+    result = chain.run({"text": pdf_text})
+
+    return jsonify({'summary': result})
+
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0')  # Set host to '0.0.0.0' for external access
+    os.makedirs('uploads', exist_ok=True)
+    app.run(host='0.0.0.0', port=8080, debug=True)
