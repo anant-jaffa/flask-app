@@ -8,6 +8,9 @@ from fuzzywuzzy import process
 import os
 from flask_cors import CORS
 from dotenv import load_dotenv
+from langchain_core.prompts import PromptTemplate
+from langchain.chains import LLMChain
+from langchain.chat_models import AzureChatOpenAI
 from langchain import PromptTemplate, LLMChain
 from langchain.chat_models import AzureChatOpenAI
 from langchain.schema import HumanMessage
