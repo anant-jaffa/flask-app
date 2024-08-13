@@ -9,4 +9,4 @@ python-Levenshtein
 flask-cors
 python-dotenv
 langchain
-azure-cors
+azure-core
