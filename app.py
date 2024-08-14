@@ -188,14 +188,13 @@ def process_files():
 
 @app.route('/summarize', methods=['POST'])
 def summarize():
-    if 'pdf' not in request.files:
-        return jsonify({'error': 'No PDF file provided'}), 400
+    if 'text' not in request.form:
+        return jsonify({'error': 'No text provided'}), 400
 
-    pdf_file = request.files['pdf']
-    pdf_text = extract_text_from_pdf(pdf_file)
+    input_text = request.form['text']  # Get the text from the request
 
     chain = LLMChain(llm=llm, prompt=prompt)
-    result = chain.run({"text": pdf_text})
+    result = chain.run({"text": input_text})
 
     return jsonify({'summary': result})
 
