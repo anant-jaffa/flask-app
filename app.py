@@ -21,6 +21,8 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
+os.makedirs('uploads', exist_ok=True)
+
 # Load environment variables
 subscription_key = os.getenv('SUBSCRIPTION_KEY')
 region = os.getenv('REGION')
